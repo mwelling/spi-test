@@ -74,10 +74,11 @@ void print_spi_transaction(__u8 *miso, __u8 *mosi, __u32 length)
 
 void print_usage(void)
 {
-	printf("USAGE: spi_test -d dev -l len -m mosi\n"
+	printf("USAGE: spi_test -d dev -l len -m mosi -s speed\n"
 	       "      -d,--device dev: name of the spi device node\n"
 	       "      -l,--length len: length of spi transaction(bytes)\n"
-	       "      -m,--mosi mosi: hex value to be transmitted\n\n"
+	       "      -m,--mosi mosi: hex value to be transmitted\n"
+	       "      -s,--speed speed: speed of the transaction in Hz\n\n"
 	       "EX: spi_test -d /dev/spidev0.0 -l 4 -m 12AB\n\n"
 	       "Note: mosi will be padded or truncated\n"
 	       "      to the length speficied.\n"
@@ -87,20 +88,18 @@ void print_usage(void)
 
 int main(int argc, char *argv[])
 {
-	__u32 speed = 800000;
-	__u16 delay = 1;
 	__u8 miso[MAX_LENGTH];
 	__u8 mosi[MAX_LENGTH];
 	struct spi_ioc_transfer tr = {
 		.tx_buf = (unsigned long)mosi,
 		.rx_buf = (unsigned long)miso,
-		.delay_usecs = delay,
-		.speed_hz = speed,
+		.delay_usecs = 1,
+		.speed_hz = 8000000,
 		.bits_per_word = 8,
 		.len = 1,
 	};
 	char *device_name = NULL;
-	char *mosi_str = NULL;
+	char *mosi_str = "FF";
 	int opt_i = 0;
 	int c;
 	int fd;
@@ -110,6 +109,7 @@ int main(int argc, char *argv[])
 		{ "device", required_argument, 0, 'd' },
 		{ "length", required_argument, 0, 'l' },
 		{ "mosi", required_argument, 0, 'm' },
+		{ "speed", required_argument, 0, 's' },
 		{ "help", no_argument, 0, '?' },
 		{ 0, 0, 0, 0 },
 	};
@@ -125,6 +125,9 @@ int main(int argc, char *argv[])
 			break;
 		case 'm':
 			mosi_str = optarg;
+			break;
+		case 's':
+			tr.speed_hz = atoi(optarg);
 			break;
 		case '?':
 			print_usage();

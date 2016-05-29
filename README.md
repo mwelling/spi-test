@@ -2,10 +2,11 @@
 Utility for accessing standard Linux spidev devices from userspace.
 
 ```
-USAGE: ./spi_test -d dev -l len -m mosi
+USAGE: ./spi_test -d dev -l len -m mosi -s speed
 	-d,--device dev: name of the spi device node
 	-l,--length len: length of spi transaction(bytes)
 	-m,--mosi mosi: hex value to be transmitted
+	-s,--speed speed: speed of the transaction in Hz
 ```
 
 Example
