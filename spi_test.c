@@ -150,6 +150,8 @@ int main(int argc, char *argv[])
 
 	string2hex(mosi_str, mosi, tr.len);
 
+	printf("Sending to %s at %ld Hz\n", device_name, tr.speed_hz);
+
 	ret = ioctl(fd, SPI_IOC_MESSAGE(1), &tr);
 	if (ret == -1)
 		fprintf(stderr, "main: ioctl SPI_IOC_MESSAGE: %s: %s\n",
