@@ -114,7 +114,7 @@ int main(int argc, char *argv[])
 		{ 0, 0, 0, 0 },
 	};
 
-	while ((c = getopt_long(argc, argv, "d:l:m:?",
+	while ((c = getopt_long(argc, argv, "d:l:m:s:?",
 				long_opts, &opt_i)) != -1) {
 		switch (c) {
 		case 'd':
