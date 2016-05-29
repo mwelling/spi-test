@@ -23,6 +23,7 @@
 #include <fcntl.h>
 #include <stdio.h>
 #include <errno.h>
+#include <getopt.h>
 #include <sys/ioctl.h>
 #include <sys/param.h>
 #include <linux/spi/spidev.h>
@@ -71,50 +72,85 @@ void print_spi_transaction(__u8 *miso, __u8 *mosi, __u32 length)
 		printf("%.2X  : %.2X\n", mosi[i], miso[i]);
 }
 
+void print_usage(void)
+{
+	printf("USAGE: spi_test -d dev -l len -m mosi\n"
+	       "      -d,--device dev: name of the spi device node\n"
+	       "      -l,--length len: length of spi transaction(bytes)\n"
+	       "      -m,--mosi mosi: hex value to be transmitted\n\n"
+	       "EX: spi_test -d /dev/spidev0.0 -l 4 -m 12AB\n\n"
+	       "Note: mosi will be padded or truncated\n"
+	       "      to the length speficied.\n"
+	       "      %d bytes maximum length.\n", MAX_LENGTH);
+}
+
+
 int main(int argc, char *argv[])
 {
-	__u8 bits = 8;
 	__u32 speed = 800000;
 	__u16 delay = 1;
 	__u8 miso[MAX_LENGTH];
 	__u8 mosi[MAX_LENGTH];
-	__u32 length;
 	struct spi_ioc_transfer tr = {
 		.tx_buf = (unsigned long)mosi,
 		.rx_buf = (unsigned long)miso,
 		.delay_usecs = delay,
 		.speed_hz = speed,
-		.bits_per_word = bits,
+		.bits_per_word = 8,
+		.len = 1,
 	};
+	char *device_name = NULL;
+	char *mosi_str = NULL;
+	int opt_i = 0;
+	int c;
 	int fd;
 	int ret;
 
-	if (argc < 4) {
-		printf("USAGE: %s device length mosi\n", argv[0]);
-		printf("      device: name of the spi device node\n"
-		       "      length: length of spi transaction(bytes)\n"
-		       "      mosi:   hex value to be transmitted\n\n"
-		       "EX: %s /dev/spidev0.0 4 12AB\n\n"
-		       "Note: mosi will be padded or truncated\n"
-		       "      to the length speficied.\n"
-		       "      %d bytes maximum length.\n", argv[0], MAX_LENGTH);
+	static struct option long_opts[] = {
+		{ "device", required_argument, 0, 'd' },
+		{ "length", required_argument, 0, 'l' },
+		{ "mosi", required_argument, 0, 'm' },
+		{ "help", no_argument, 0, '?' },
+		{ 0, 0, 0, 0 },
+	};
+
+	while ((c = getopt_long(argc, argv, "d:l:m:?",
+				long_opts, &opt_i)) != -1) {
+		switch (c) {
+		case 'd':
+			device_name = optarg;
+			break;
+		case 'l':
+			tr.len = MIN(atoi(optarg), MAX_LENGTH);
+			break;
+		case 'm':
+			mosi_str = optarg;
+			break;
+		case '?':
+			print_usage();
+			return 0;
+		}
+	}
+
+	if (!device_name) {
+		fprintf(stderr, "Missing required device argument.\n");
+		print_usage();
 		return -1;
 	}
 
-	fd = open(argv[1], O_RDWR);
+	fd = open(device_name, O_RDWR);
 	if (fd == -1) {
 		fprintf(stderr, "main: opening device file: %s: %s\n",
-		       argv[1], strerror(errno));
+		       device_name, strerror(errno));
 		return -1;
 	}
 
-	tr.len = MIN(atoi(argv[2]), MAX_LENGTH);
-	string2hex(argv[3], mosi, tr.len);
+	string2hex(mosi_str, mosi, tr.len);
 
 	ret = ioctl(fd, SPI_IOC_MESSAGE(1), &tr);
 	if (ret == -1)
-		fprintf(stderr, "main: ioctl SPI_IOC_MESSAGE: %s\n",
-			strerror(errno));
+		fprintf(stderr, "main: ioctl SPI_IOC_MESSAGE: %s: %s\n",
+			device_name, strerror(errno));
 	else
 		print_spi_transaction(miso, mosi, tr.len);
 
