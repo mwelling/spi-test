@@ -94,8 +94,6 @@ int main(int argc, char *argv[])
 		.tx_buf = (unsigned long)mosi,
 		.rx_buf = (unsigned long)miso,
 		.delay_usecs = 1,
-		.speed_hz = 8000000,
-		.bits_per_word = 8,
 		.len = 1,
 	};
 	char *device_name = NULL;
